@@ -25,15 +25,15 @@ const input = {
   up: false,
 };
 
-const camera = {
-  x: 0,
-  y: 0,
-};
-
 const entity = {
   x: 0,
   y: 0,
   height: 10,
+};
+
+const platform = {
+  x: 100,
+  y: 20,
 };
 
 let t = 0;
@@ -54,6 +54,13 @@ function clear() {
   ctx.fillRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
   ctx.lineWidth = 10;
   ctx.strokeStyle = 'black';
+}
+
+function renderPlatform(p) {
+  const x = toScreenX(p);
+  const y = toScreenY(p);
+  ctx.fillStyle = 'blue';
+  ctx.fillRect(x-5, y-2, 10, 4);
 }
 
 function renderEntity(e) {
@@ -92,11 +99,11 @@ function renderBricks() {
 }
 
 function toScreenX(e) {
-  return normalize(e.x - camera.x, 0, TOWER_WIDTH) + TOWER_WIDTH / 2;
+  return normalize(e.x, 0, TOWER_WIDTH);
 }
 
 function toScreenX2(e) {
-  const x = normalize(e.x - camera.x);
+  const x = normalize(e.x, 0, TOWER_WIDTH);
   const tx = x / TOWER_WIDTH;
   // tx * 2 * Math.PI
   // is like, percentage of 360 degrees.
@@ -105,7 +112,7 @@ function toScreenX2(e) {
 }
 
 function toScreenY(e) {
-  const y = e.y - camera.y;
+  const y = e.y;
   const screenY = VIEWPORT_HEIGHT - y;
   return screenY;
 }
@@ -177,8 +184,8 @@ function addListeners() {
 
 function rafCallback() {
   t++;
-  if (t % 3 === 0) {
-    //++frame;
+  if (t % 32 === 0) {
+    ++frame;
     frame %= 8;
   }
   // entity.x += 1;
@@ -193,10 +200,11 @@ function rafCallback() {
     entity.y += 1;
   }
   clear();
-  renderBricks();
+  //renderBricks();
   renderEntity(entity);
   ctx.strokeStyle = 'red';
   renderEntity2(entity);
+  renderPlatform(platform);
   requestAnimationFrame(rafCallback);
 }
 
