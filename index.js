@@ -1,8 +1,6 @@
 // Import stylesheets
 import './style.css';
 
-// Write Javascript code!
-// Write Javascript code!
 const appDiv = document.getElementById('app');
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
@@ -14,9 +12,18 @@ const VIEWPORT_WIDTH = 300;
 const TOWER_WIDTH = 300;
 const TOWER_HEIGHT = 600;
 
-const ASSETS = ["https://atariage.com/forums/uploads/monthly_04_2018/post-33891-0-54298600-1524899928.png"];
+const KEY = { SPACE: 32, LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40 }; // input key codes
+const ASSETS = [
+  'https://atariage.com/forums/uploads/monthly_04_2018/post-33891-0-54298600-1524899928.png',
+];
 
 const images = [];
+
+const input = {
+  left: false,
+  right: false,
+  up: false,
+};
 
 const camera = {
   x: 0,
@@ -24,8 +31,9 @@ const camera = {
 };
 
 const entity = {
-  x: 100,
+  x: 0,
   y: 0,
+  height: 10,
 };
 
 let t = 0;
@@ -44,7 +52,7 @@ init();
 function clear() {
   ctx.fillStyle = 'grey';
   ctx.fillRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 10;
   ctx.strokeStyle = 'black';
 }
 
@@ -53,7 +61,7 @@ function renderEntity(e) {
   const y = toScreenY(e);
   ctx.beginPath();
   ctx.moveTo(x, y);
-  ctx.lineTo(x, y - 5);
+  ctx.lineTo(x, y - e.height);
   ctx.stroke();
 }
 
@@ -62,39 +70,37 @@ function renderEntity2(e) {
   const y = toScreenY(e);
   ctx.beginPath();
   ctx.moveTo(x, y);
-  ctx.lineTo(x, y - 5);
+  ctx.lineTo(x, y - e.height);
   ctx.stroke();
 }
 
 function renderBricks() {
   if (!images[0]) return;
-  let f = frame;
-  let sy = 8 * frame;
-  ctx.drawImage(images[0], 0, sy, 128, 8, 0, 0, 128, 8);
-  f = frame + 4;
-  f %= 8;
-  sy = 8 * f;
-  ctx.drawImage(images[0], 0, sy, 128, 8, 0, 8, 128, 8);
-  f = frame;
-  f %= 8;
-  sy = 8 * f;
-  ctx.drawImage(images[0], 0, sy, 128, 8, 0, 16, 128, 8);
-  f = frame + 4;
-  f %= 8;
-  sy = 8 * f;
-  ctx.drawImage(images[0], 0, sy, 128, 8, 0, 24, 128, 8);
+  ctx.save();
+  ctx.translate(VIEWPORT_WIDTH * 0.5, 0);
+  const dx = -64;
+  let dy = 0;
+  const rows = 19;
+  for (let i = 0; i < rows; ++i) {
+    let offset = i % 2 === 0 ? 4 : 0;
+    let f = (frame + offset) % 8;
+    let sy = 8 * f;
+    ctx.drawImage(images[0], 0, sy, 128, 8, dx, dy, 128, 8);
+    dy += 8;
+  }
+  ctx.restore();
 }
 
 function toScreenX(e) {
-  return normalize(e.x - camera.x, 0, TOWER_WIDTH);
+  return normalize(e.x - camera.x, 0, TOWER_WIDTH) + TOWER_WIDTH / 2;
 }
 
 function toScreenX2(e) {
   const x = normalize(e.x - camera.x);
   const tx = x / TOWER_WIDTH;
-  // tx * 2 * Math.PI 
+  // tx * 2 * Math.PI
   // is like, percentage of 360 degrees.
-  const tx1 = (TOWER_WIDTH/4) * Math.sin(tx * 2 * Math.PI);
+  const tx1 = (TOWER_WIDTH / 4) * Math.sin(tx * 2 * Math.PI);
   return tx1;
 }
 
@@ -125,36 +131,77 @@ function normalize(n, min, max) {
 function loadImage(url) {
   const image = new Image();
   image.src = url;
-  image.onload = function () {
-    console.log('i load');
-  }
   images.push(image);
 }
 
 function loadAssets() {
-  for(const asset of ASSETS) {
-    console.log(asset);
+  for (const asset of ASSETS) {
     loadImage(asset);
   }
 }
 
+function handleKeyDown(e) {
+  e.preventDefault();
+  switch (e.keyCode) {
+    case KEY.UP:
+      input.up = true;
+      break;
+    case KEY.LEFT:
+      input.left = true;
+      break;
+    case KEY.RIGHT:
+      input.right = true;
+      break;
+  }
+}
+
+function handleKeyUp(e) {
+  e.preventDefault();
+  switch (e.keyCode) {
+    case KEY.UP:
+      input.up = false;
+      break;
+    case KEY.LEFT:
+      input.left = false;
+      break;
+    case KEY.RIGHT:
+      input.right = false;
+      break;
+  }
+}
+
+function addListeners() {
+  document.onkeydown = handleKeyDown;
+  document.onkeyup = handleKeyUp;
+}
+
 function rafCallback() {
-  ++t;
+  t++;
   if (t % 3 === 0) {
-    ++frame;
+    //++frame;
     frame %= 8;
   }
-  entity.x += 1;
+  // entity.x += 1;
   // entity.x = normalize(entity.x, 0, TOWER_WIDTH);
+  if (input.right) {
+    entity.x += 1;
+  }
+  if (input.left) {
+    entity.x -= 1;
+  }
+  if (input.up) {
+    entity.y += 1;
+  }
   clear();
   renderBricks();
   renderEntity(entity);
-  ctx.strokeStyle = 'green';
+  ctx.strokeStyle = 'red';
   renderEntity2(entity);
   requestAnimationFrame(rafCallback);
 }
 
 function init() {
   loadAssets();
+  addListeners();
   requestAnimationFrame(rafCallback);
 }
